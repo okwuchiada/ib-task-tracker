@@ -1,0 +1,79 @@
+{
+  "name": "task-tracker",
+  "displayName": "Task Tracker",
+  "description": "Create team task IDs, tag commits with them, and record pushed commits for cherry-picking.",
+  "version": "0.1.0",
+  "publisher": "task-tracker",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "SCM Providers",
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "extensionDependencies": [
+    "vscode.git"
+  ],
+  "contributes": {
+    "commands": [
+      { "command": "taskTracker.signIn", "title": "Sign In", "category": "Task Tracker" },
+      { "command": "taskTracker.signOut", "title": "Sign Out", "category": "Task Tracker" },
+      { "command": "taskTracker.createTask", "title": "Create Task", "category": "Task Tracker", "icon": "$(add)" },
+      { "command": "taskTracker.selectTask", "title": "Select Task", "category": "Task Tracker" },
+      { "command": "taskTracker.insertTaskId", "title": "Insert Task ID in Commit Message", "category": "Task Tracker", "icon": "$(tag)" },
+      { "command": "taskTracker.copyTaskId", "title": "Copy Active Task ID", "category": "Task Tracker" },
+      { "command": "taskTracker.markDone", "title": "Mark Active Task Done", "category": "Task Tracker" },
+      { "command": "taskTracker.addToGroup", "title": "Add Active Task to Group", "category": "Task Tracker" },
+      { "command": "taskTracker.installHooks", "title": "Install Git Hooks", "category": "Task Tracker" },
+      { "command": "taskTracker.openDashboard", "title": "Open Dashboard", "category": "Task Tracker" }
+    ],
+    "menus": {
+      "scm/title": [
+        { "command": "taskTracker.insertTaskId", "when": "scmProvider == git", "group": "navigation" },
+        { "command": "taskTracker.createTask", "when": "scmProvider == git", "group": "navigation" }
+      ]
+    },
+    "configuration": {
+      "title": "Task Tracker",
+      "properties": {
+        "taskTracker.serverUrl": {
+          "type": "string",
+          "default": "http://localhost:3000",
+          "description": "URL of the Task Tracker dashboard (no trailing slash)."
+        },
+        "taskTracker.prefillCommitMessage": {
+          "type": "boolean",
+          "default": true,
+          "description": "Pre-fill the commit message box with type(TASK-ID): for the active task."
+        },
+        "taskTracker.promptToInstallHooks": {
+          "type": "boolean",
+          "default": true,
+          "description": "Offer to install the commit-msg and pre-push hooks in repositories that don't have them."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "package": "npm run build && vsce package --no-dependencies --allow-missing-repository --skip-license"
+  },
+  "devDependencies": {
+    "@task-tracker/shared": "*",
+    "@types/node": "^22.18.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.6.0",
+    "esbuild": "^0.25.10",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

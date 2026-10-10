@@ -1,0 +1,171 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum TaskStatus {
+  OPEN
+  DONE
+  CANCELLED
+}
+
+enum GroupStatus {
+  OPEN
+  SHIPPED
+  ARCHIVED
+}
+
+model User {
+  id              String   @id @default(cuid())
+  githubId        String   @unique
+  login           String
+  name            String?
+  avatarUrl       String?
+  role            Role     @default(MEMBER)
+  viewAllProjects Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tokens        ApiToken[]
+  tasks         Task[]          @relation("TaskCreatedBy")
+  projectAccess ProjectAccess[] @relation("AccessUser")
+  accessGranted ProjectAccess[] @relation("AccessGrantedBy")
+  commits       Commit[]
+  groups        TaskGroup[]
+  groupItems    TaskGroupItem[]
+
+  @@index([login])
+}
+
+model ApiToken {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  label      String
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  nextSeq   Int      @default(1)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  tasks  Task[]
+  access ProjectAccess[]
+}
+
+model Environment {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  tasks Task[]
+}
+
+model ProjectAccess {
+  userId      String
+  projectId   String
+  grantedById String
+  createdAt   DateTime @default(now())
+
+  user      User    @relation("AccessUser", fields: [userId], references: [id], onDelete: Cascade)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  grantedBy User    @relation("AccessGrantedBy", fields: [grantedById], references: [id])
+
+  @@id([userId, projectId])
+}
+
+model Task {
+  id            String     @id @default(cuid())
+  taskId        String     @unique
+  projectId     String
+  environmentId String
+  type          String
+  seq           Int
+  title         String
+  description   String?
+  status        TaskStatus @default(OPEN)
+  createdById   String
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  project     Project         @relation(fields: [projectId], references: [id])
+  environment Environment     @relation(fields: [environmentId], references: [id])
+  createdBy   User            @relation("TaskCreatedBy", fields: [createdById], references: [id])
+  commits     Commit[]
+  groupItems  TaskGroupItem[]
+
+  @@unique([projectId, seq])
+  @@index([createdById])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Commit {
+  id          String   @id @default(cuid())
+  sha         String
+  repo        String
+  branch      String
+  message     String
+  authorName  String?
+  authorEmail String?
+  cherryPickOf String?
+  committedAt DateTime
+  recordedAt  DateTime @default(now())
+  taskRef     String
+  recordedById String
+
+  task       Task @relation(fields: [taskRef], references: [id], onDelete: Cascade)
+  recordedBy User @relation(fields: [recordedById], references: [id])
+
+  @@unique([repo, sha])
+  @@index([taskRef])
+}
+
+model TaskGroup {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  status      GroupStatus @default(OPEN)
+  createdById String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  createdBy User            @relation(fields: [createdById], references: [id])
+  items     TaskGroupItem[]
+}
+
+model TaskGroupItem {
+  groupId   String
+  taskRef   String
+  addedById String
+  addedAt   DateTime @default(now())
+
+  group   TaskGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  task    Task      @relation(fields: [taskRef], references: [id], onDelete: Cascade)
+  addedBy User      @relation(fields: [addedById], references: [id])
+
+  @@id([groupId, taskRef])
+  @@index([taskRef])
+}

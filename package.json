@@ -1,0 +1,14 @@
+{
+  "name": "task-tracker",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build:shared": "npm run build -w @task-tracker/shared",
+    "test": "npm run test --workspaces --if-present",
+    "dev": "npm run dev -w web",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  }
+}

@@ -1,0 +1,11 @@
+node_modules
+.next
+dist
+out
+*.vsix
+.env
+.env*.local
+.vscode-test
+coverage
+*.tsbuildinfo
+.DS_Store
