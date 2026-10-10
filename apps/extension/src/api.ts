@@ -28,7 +28,7 @@ export class ApiClient {
         signal: AbortSignal.timeout(15000),
       });
     } catch (err) {
-      throw new ApiError(0, `Could not reach Task Tracker at ${this.serverUrl}`);
+      throw new ApiError(0, `Could not reach Task Tracker at ${this.serverUrl} (${describeFetchError(err)})`);
     }
     const body = (await res.json().catch(() => ({}))) as { error?: string };
     if (!res.ok) throw new ApiError(res.status, body.error ?? `Request failed (${res.status})`);
@@ -80,4 +80,11 @@ export class ApiClient {
       body: JSON.stringify({ taskId }),
     });
   }
+}
+
+/** fetch only says "fetch failed"; the useful part (ECONNREFUSED, a timeout, a proxy error…) is in `cause`. */
+function describeFetchError(err: unknown): string {
+  if (err instanceof Error && err.name === 'TimeoutError') return 'no response after 15s';
+  const cause = err instanceof Error ? (err.cause as { code?: string; message?: string } | undefined) : undefined;
+  return cause?.code || cause?.message || (err instanceof Error ? err.message : String(err));
 }

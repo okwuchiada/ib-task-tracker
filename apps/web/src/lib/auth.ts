@@ -9,7 +9,14 @@ declare module 'next-auth' {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [GitHub({ authorization: { params: { scope: 'read:user read:org' } } })],
+  providers: [
+    GitHub({
+      // Trimmed because a stray space pasted into .env makes GitHub answer with a 404 page.
+      clientId: process.env.AUTH_GITHUB_ID?.trim(),
+      clientSecret: process.env.AUTH_GITHUB_SECRET?.trim(),
+      authorization: { params: { scope: 'read:user read:org' } },
+    }),
+  ],
   session: { strategy: 'jwt' },
   pages: { signIn: '/signin', error: '/signin' },
   callbacks: {
