@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { signOutAction } from '@/lib/actions';
 import { getCurrentUser } from '@/lib/session';
+import { ThemeToggle, themeInitScript } from '@/components/ThemeToggle';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -13,7 +14,11 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const user = await getCurrentUser();
   return (
-    <html lang="en">
+    // The init script sets data-theme before hydration, so React would otherwise warn about it.
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body>
         {user && (
           <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
@@ -41,6 +46,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                 </>
               )}
               <div className="ml-auto flex items-center gap-3">
+                <ThemeToggle />
                 <Link href="/settings/tokens" className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
                   {user.avatarUrl && <img src={user.avatarUrl} alt="" className="h-6 w-6 rounded-full" />}
                   {user.login}

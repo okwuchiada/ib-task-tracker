@@ -15,7 +15,7 @@ feat(IPO-Prod-fix-Q123450): Readjust the layout of invest app
 ## How it works
 
 1. A developer runs **Task Tracker: Create Task** and picks the project, environment and type, then enters a title. The server returns a new ID with a random 6-digit number, e.g. `IPO-Prod-fix-Q482913`, which becomes the active task (shown in the status bar).
-2. The commit box is pre-filled with `fix(IPO-Prod-fix-Q482913): `.
+2. The commit box is pre-filled with `fix(IPO-Prod-fix-Q482913): `. If you use VS Code's commit message generator (the sparkle button), the extension puts the task ID back into the generated message: `feat: add toggle` becomes `feat(IPO-Prod-fix-Q482913): add toggle`, and a message without a type gets the task's type. Turn this off with `taskTracker.keepTaskIdInGeneratedMessages`.
 3. The **commit-msg** hook rejects messages without a valid `type(TASK-ID): description` and IDs the server doesn't know. If the server can't be reached, it only checks the format and prints a warning. Merge, revert, `fixup!` and `squash!` messages are allowed through.
 4. The **pre-push** hook sends the commits being pushed to the dashboard. Only pushed commits are recorded, so local commits that were amended or rebased never appear. It reports any commit the server skipped (for example an unknown task ID). If the server is down, commits are queued in `~/.config/task-tracker/queue.jsonl` and sent with the next push. A push is never blocked.
 5. On GitHub, the **Commit messages** workflow (`.github/workflows/commit-messages.yml`) checks every new commit in each push and pull request with the same rule, so commits made with `--no-verify` or without the extension are still caught. Make it a required status check on `main` so commits with bad messages can't be merged.
