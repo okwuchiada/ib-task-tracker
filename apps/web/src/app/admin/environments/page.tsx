@@ -1,7 +1,11 @@
 import { createEnvironment, setEnvironmentActive } from '@/lib/actions';
 import { prisma } from '@/lib/db';
 import { requireAdmin } from '@/lib/session';
-import { Badge, Empty, PageHeader } from '@/components/ui';
+import { Empty, Field, PageHeader, StatusBadge } from '@/components/common';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export default async function EnvironmentsPage() {
   await requireAdmin();
@@ -12,45 +16,50 @@ export default async function EnvironmentsPage() {
 
   return (
     <>
-      <PageHeader title="Environments" description="The second part of a task ID, e.g. Prod in IPO-Prod-fix-Q1234." />
-      <form action={createEnvironment} className="card mb-6 flex flex-wrap items-end gap-3 p-3">
-        <label className="flex flex-col gap-1 text-xs text-zinc-500">
-          Name
-          <input name="name" required pattern="[A-Za-z]{2,20}" placeholder="Staging" className="input w-48" />
-        </label>
-        <button className="btn btn-primary">Add environment</button>
-      </form>
+      <PageHeader title="Environments" description="The second part of a task ID, e.g. Prod in IPO-Prod-fix-Q123450." />
+      <Card size="sm" className="mb-6">
+        <form action={createEnvironment} className="flex flex-wrap items-end gap-3 px-(--card-spacing)">
+          <Field label="Name">
+            <Input name="name" required pattern="[A-Za-z]{2,20}" placeholder="Staging" className="w-48" />
+          </Field>
+          <Button>Add environment</Button>
+        </form>
+      </Card>
 
-      <div className="card overflow-x-auto">
+      <Card className="py-0">
         {environments.length === 0 ? (
           <Empty>No environments yet.</Empty>
         ) : (
-          <table className="table w-full">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th className="text-right">Tasks</th>
-                <th>Status</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead className="text-right">Tasks</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {environments.map((e) => (
-                <tr key={e.id}>
-                  <td>{e.name}</td>
-                  <td className="text-right tabular-nums">{e._count.tasks}</td>
-                  <td>{e.active ? <Badge tone="OPEN">active</Badge> : <Badge tone="ARCHIVED">inactive</Badge>}</td>
-                  <td className="text-right">
+                <TableRow key={e.id}>
+                  <TableCell>{e.name}</TableCell>
+                  <TableCell className="text-right tabular-nums">{e._count.tasks}</TableCell>
+                  <TableCell>
+                    {e.active ? <StatusBadge tone="OPEN">active</StatusBadge> : <StatusBadge tone="ARCHIVED">inactive</StatusBadge>}
+                  </TableCell>
+                  <TableCell className="text-right">
                     <form action={setEnvironmentActive.bind(null, e.id, !e.active)}>
-                      <button className="btn btn-sm">{e.active ? 'Deactivate' : 'Activate'}</button>
+                      <Button variant="outline" size="xs">
+                        {e.active ? 'Deactivate' : 'Activate'}
+                      </Button>
                     </form>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
-      </div>
+      </Card>
     </>
   );
 }
