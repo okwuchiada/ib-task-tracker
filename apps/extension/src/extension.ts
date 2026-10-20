@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import type { ApiTask } from '@task-tracker/shared';
 import * as vscode from 'vscode';
 import { ApiClient, ApiError } from './api';
-import { applyPrefix, isReplaceablePrefix } from './commitPrefix';
+import { addTaskId, applyPrefix, isReplaceablePrefix, wasReplacedWithoutTaskId } from './commitPrefix';
 import { deleteCredentials, readCredentials, writeCredentials } from './credentials';
 import type { API as GitAPI, GitExtension, Repository } from './git';
 import { copyHookScripts, inspectRepo, installHooks } from './hooksInstaller';
@@ -70,6 +70,26 @@ function prefillRepo(repo: Repository, force: boolean) {
 
 function prefillAll(force: boolean) {
   git?.repositories.forEach((r) => prefillRepo(r, force));
+}
+
+/** What each commit box held the last time we looked, to tell typing apart from a generated message. */
+const lastInput = new WeakMap<Repository, string>();
+const INPUT_CHECK_MS = 300;
+
+/**
+ * The commit message generator (the sparkle button) replaces the whole box, dropping `type(TASK-ID): `.
+ * The git API has no change event for the box, so we look at it every INPUT_CHECK_MS and put the ID back.
+ */
+function keepTaskId(repo: Repository) {
+  const current = repo.inputBox.value;
+  const previous = lastInput.get(repo) ?? current;
+  lastInput.set(repo, current);
+  const task = activeTask();
+  const enabled = vscode.workspace.getConfiguration('taskTracker').get<boolean>('keepTaskIdInGeneratedMessages', true);
+  if (!task || !enabled || !wasReplacedWithoutTaskId(previous, current)) return;
+  const next = addTaskId(current, task.type, task.taskId);
+  repo.inputBox.value = next;
+  lastInput.set(repo, next);
 }
 
 function watchRepository(repo: Repository) {
@@ -360,6 +380,8 @@ export async function activate(ctx: vscode.ExtensionContext) {
     git = (gitExt.isActive ? gitExt.exports : await gitExt.activate()).getAPI(1);
     git.repositories.forEach(watchRepository);
     ctx.subscriptions.push(git.onDidOpenRepository(watchRepository));
+    const timer = setInterval(() => git?.repositories.forEach(keepTaskId), INPUT_CHECK_MS);
+    ctx.subscriptions.push({ dispose: () => clearInterval(timer) });
   }
 
   if (!(await ctx.secrets.get(SECRET_KEY))) {

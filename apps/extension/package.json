@@ -2,7 +2,7 @@
   "name": "task-tracker",
   "displayName": "Task Tracker",
   "description": "Create team task IDs, tag commits with them, and record pushed commits for cherry-picking.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "task-tracker",
   "private": true,
   "license": "UNLICENSED",
@@ -51,6 +51,11 @@
           "type": "boolean",
           "default": true,
           "description": "Pre-fill the commit message box with type(TASK-ID): for the active task."
+        },
+        "taskTracker.keepTaskIdInGeneratedMessages": {
+          "type": "boolean",
+          "default": true,
+          "description": "When the commit message generator (or a paste) replaces the commit box, put type(TASK-ID): back at the start."
         },
         "taskTracker.promptToInstallHooks": {
           "type": "boolean",
