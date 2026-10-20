@@ -21,7 +21,10 @@ export const PROJECT_CODE_REGEX = /^[A-Z0-9]{2,10}$/;
 export const ENVIRONMENT_NAME_REGEX = /^[A-Za-z]{2,20}$/;
 
 const TASK_ID_BODY = `([A-Z0-9]{2,10})-([A-Za-z]{2,20})-(${TASK_TYPES.join('|')})-Q(\\d+)`;
+/** Matches any task ID, including older ones with short numbers (e.g. Q1), so existing tasks can still be looked up. */
 export const TASK_ID_REGEX = new RegExp(`^${TASK_ID_BODY}$`);
+/** What new commits must use: exactly six digits after the Q. */
+export const COMMIT_TASK_ID_REGEX = new RegExp(`^([A-Z0-9]{2,10})-([A-Za-z]{2,20})-(${TASK_TYPES.join('|')})-Q(\\d{6})$`);
 const TASK_ID_ANYWHERE = new RegExp(`\\b${TASK_ID_BODY}\\b`);
 
 /** `type(scope): subject` — the scope is validated separately so we can give a precise error. */
@@ -36,6 +39,14 @@ export interface TaskIdParts {
   seq: number;
 }
 
+/** Task numbers are random 6-digit values, e.g. Q123450, so IDs don't reveal how many tasks exist. */
+export const TASK_SEQ_MIN = 100000;
+export const TASK_SEQ_MAX = 999999;
+
+export function randomTaskSeq(): number {
+  return TASK_SEQ_MIN + Math.floor(Math.random() * (TASK_SEQ_MAX - TASK_SEQ_MIN + 1));
+}
+
 export function buildTaskId(parts: TaskIdParts): string {
   if (!PROJECT_CODE_REGEX.test(parts.projectCode)) {
     throw new Error(`Invalid project code "${parts.projectCode}" (2-10 uppercase letters/digits)`);
@@ -46,7 +57,7 @@ export function buildTaskId(parts: TaskIdParts): string {
   if (!TASK_TYPES.includes(parts.type)) {
     throw new Error(`Invalid task type "${parts.type}"`);
   }
-  if (!Number.isInteger(parts.seq) || parts.seq < 1) {
+  if (!Number.isInteger(parts.seq) || parts.seq < TASK_SEQ_MIN || parts.seq > TASK_SEQ_MAX) {
     throw new Error(`Invalid sequence ${parts.seq}`);
   }
   return `${parts.projectCode}-${parts.environment}-${parts.type}-Q${parts.seq}`;
@@ -90,14 +101,14 @@ export function checkCommitMessage(message: string): CommitCheck {
   if (!m) {
     return {
       ok: false,
-      reason: `Commit message must look like "<type>(<TASK-ID>): <description>", e.g. "feat(IPO-Prod-fix-Q1234): Readjust the layout". Allowed types: ${COMMIT_TYPES.join(', ')}.`,
+      reason: `Commit message must look like "<type>(<TASK-ID>): <description>", e.g. "feat(IPO-Prod-fix-Q123450): Readjust the layout". Allowed types: ${COMMIT_TYPES.join(', ')}.`,
     };
   }
   const [, commitType, scope, description] = m;
-  if (!isValidTaskId(scope)) {
+  if (!COMMIT_TASK_ID_REGEX.test(scope)) {
     return {
       ok: false,
-      reason: `"${scope}" is not a valid task ID. Expected <PROJECT>-<ENV>-<TYPE>-Q<number>, e.g. IPO-Prod-fix-Q1234.`,
+      reason: `"${scope}" is not a valid task ID. Expected <PROJECT>-<ENV>-<TYPE>-Q<6 digits>, e.g. IPO-Prod-fix-Q123450.`,
     };
   }
   if (description.trim() === '') {
