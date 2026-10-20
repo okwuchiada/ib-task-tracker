@@ -1,0 +1,53 @@
+name: Release extension
+
+# Push a tag like ext-v0.2.0 (matching "version" in apps/extension/package.json)
+# to build the .vsix and attach it to a GitHub Release.
+on:
+  push:
+    tags:
+      - 'ext-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish .vsix
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Check the tag matches the extension version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version=$(node -p "require('./apps/extension/package.json').version")
+          if [ "$TAG" != "ext-v$version" ]; then
+            echo "::error::Tag $TAG does not match apps/extension/package.json version $version (expected ext-v$version)."
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - run: npm ci
+
+      - name: Test
+        run: |
+          npm test -w @task-tracker/shared
+          npm test -w apps/extension
+
+      - name: Package
+        run: npm run package -w apps/extension
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" "apps/extension/task-tracker-$VERSION.vsix" \
+            --title "Task Tracker extension v$VERSION" \
+            --generate-notes

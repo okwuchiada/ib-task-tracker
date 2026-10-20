@@ -71,9 +71,11 @@ npm run dev            # from the repo root, http://localhost:3000
 
 ```bash
 cd apps/extension
-npm run package        # produces task-tracker-0.1.0.vsix
-code --install-extension task-tracker-0.1.0.vsix
+npm run package        # produces task-tracker-0.2.0.vsix
+code --install-extension task-tracker-0.2.0.vsix
 ```
+
+To publish a build for the team, bump `version` in `apps/extension/package.json`, commit, then push a matching tag (`git tag ext-v0.2.0 && git push origin ext-v0.2.0`). The **Release extension** workflow runs the tests, packages the `.vsix` and attaches it to a GitHub Release.
 
 Share the `.vsix` with the team. In VS Code, set **Task Tracker: Server Url** (`taskTracker.serverUrl`) to the dashboard URL, then run **Task Tracker: Sign In**. VS Code's built-in GitHub login is used, so there are no passwords.
 

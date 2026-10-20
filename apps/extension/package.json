@@ -2,7 +2,7 @@
   "name": "task-tracker",
   "displayName": "Task Tracker",
   "description": "Create team task IDs, tag commits with them, and record pushed commits for cherry-picking.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "task-tracker",
   "private": true,
   "license": "UNLICENSED",
