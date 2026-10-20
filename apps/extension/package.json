@@ -44,7 +44,7 @@
       "properties": {
         "taskTracker.serverUrl": {
           "type": "string",
-          "default": "http://localhost:3000",
+          "default": "https://ib-task-tracker-lilac.vercel.app",
           "description": "URL of the Task Tracker dashboard (no trailing slash)."
         },
         "taskTracker.prefillCommitMessage": {
