@@ -35,7 +35,6 @@ export default async function ProjectsPage() {
                 <th>Code</th>
                 <th>Name</th>
                 <th className="text-right">Tasks</th>
-                <th>Next ID</th>
                 <th>Status</th>
                 <th />
               </tr>
@@ -53,9 +52,6 @@ export default async function ProjectsPage() {
                     </form>
                   </td>
                   <td className="text-right tabular-nums">{p._count.tasks}</td>
-                  <td>
-                    <Mono>Q{p.nextSeq}</Mono>
-                  </td>
                   <td>{p.active ? <Badge tone="OPEN">active</Badge> : <Badge tone="ARCHIVED">inactive</Badge>}</td>
                   <td className="text-right">
                     <form action={setProjectActive.bind(null, p.id, !p.active)}>

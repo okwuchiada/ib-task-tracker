@@ -3,9 +3,9 @@
 Every commit carries a task ID so fixes and features are easy to find and cherry-pick:
 
 ```
-feat(IPO-Prod-fix-Q1234): Readjust the layout of invest app
-     └┬┘ └┬─┘ └┬┘ └─┬─┘
-  project env type  sequence (assigned by the server, per project)
+feat(IPO-Prod-fix-Q123450): Readjust the layout of invest app
+     └┬┘ └┬─┘ └┬┘ └──┬──┘
+  project env type  number (random 6 digits, unique per project)
 ```
 
 - **VS Code extension** (`apps/extension`): sign in with GitHub, create a task ID, and get the commit box pre-filled. It also installs git hooks that check task IDs and record pushed commits.
@@ -14,11 +14,12 @@ feat(IPO-Prod-fix-Q1234): Readjust the layout of invest app
 
 ## How it works
 
-1. A developer runs **Task Tracker: Create Task** and picks the project, environment and type, then enters a title. The server returns the next ID, e.g. `IPO-Prod-fix-Q12`, which becomes the active task (shown in the status bar).
-2. The commit box is pre-filled with `fix(IPO-Prod-fix-Q12): `.
+1. A developer runs **Task Tracker: Create Task** and picks the project, environment and type, then enters a title. The server returns a new ID with a random 6-digit number, e.g. `IPO-Prod-fix-Q482913`, which becomes the active task (shown in the status bar).
+2. The commit box is pre-filled with `fix(IPO-Prod-fix-Q482913): `.
 3. The **commit-msg** hook rejects messages without a valid `type(TASK-ID): description` and IDs the server doesn't know. If the server can't be reached, it only checks the format and prints a warning. Merge, revert, `fixup!` and `squash!` messages are allowed through.
 4. The **pre-push** hook sends the commits being pushed to the dashboard. Only pushed commits are recorded, so local commits that were amended or rebased never appear. It reports any commit the server skipped (for example an unknown task ID). If the server is down, commits are queued in `~/.config/task-tracker/queue.jsonl` and sent with the next push. A push is never blocked.
-5. On the dashboard, put related tasks into a **group** (a release, a feature). The group page lists every commit from all of its tasks, oldest first, grouped by repo, with a `git cherry-pick -x …` command. Commits that are themselves cherry-picks (they carry the `-x` trailer) are left out, so they aren't picked twice.
+5. On GitHub, the **Commit messages** workflow (`.github/workflows/commit-messages.yml`) checks every new commit in each push and pull request with the same rule, so commits made with `--no-verify` or without the extension are still caught. Make it a required status check on `main` so commits with bad messages can't be merged.
+6. On the dashboard, put related tasks into a **group** (a release, a feature). The group page lists every commit from all of its tasks, oldest first, grouped by repo, with a `git cherry-pick -x …` command. Commits that are themselves cherry-picks (they carry the `-x` trailer) are left out, so they aren't picked twice.
 
 ### Who sees what
 

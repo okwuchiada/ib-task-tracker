@@ -1,28 +1,34 @@
 import type { User } from '@prisma/client';
-import { buildTaskId, type CreateTaskRequest } from '@task-tracker/shared';
+import { buildTaskId, randomTaskSeq, type CreateTaskRequest } from '@task-tracker/shared';
 import { prisma } from './db';
 import { HttpError } from './http';
 import { taskInclude } from './serialize';
 
+const MAX_SEQ_ATTEMPTS = 10;
+
 /**
- * Allocates the next per-project sequence number and creates the task in one transaction.
- * The UPDATE … RETURNING takes a row lock on the project, so concurrent creates never share a number.
+ * Picks a random 6-digit number not yet used in the project and creates the task in one transaction.
+ * The @@unique([projectId, seq]) constraint still guards against two concurrent creates picking the same number.
  */
 export async function createTask(user: User, input: CreateTaskRequest) {
   return prisma.$transaction(async (tx) => {
     const env = await tx.environment.findFirst({ where: { id: input.environmentId, active: true } });
     if (!env) throw new HttpError(400, 'Unknown or inactive environment');
 
-    const rows = await tx.$queryRaw<{ code: string; seq: number }[]>`
-      UPDATE "Project" SET "nextSeq" = "nextSeq" + 1
-      WHERE "id" = ${input.projectId} AND "active" = true
-      RETURNING "code", "nextSeq" - 1 AS "seq"`;
-    if (!rows.length) throw new HttpError(400, 'Unknown or inactive project');
-    const seq = Number(rows[0].seq);
+    const project = await tx.project.findFirst({ where: { id: input.projectId, active: true } });
+    if (!project) throw new HttpError(400, 'Unknown or inactive project');
+
+    let seq = 0;
+    for (let attempt = 0; attempt < MAX_SEQ_ATTEMPTS && !seq; attempt++) {
+      const candidate = randomTaskSeq();
+      const taken = await tx.task.findUnique({ where: { projectId_seq: { projectId: project.id, seq: candidate } } });
+      if (!taken) seq = candidate;
+    }
+    if (!seq) throw new HttpError(503, 'Could not allocate a task number, please retry');
 
     const task = await tx.task.create({
       data: {
-        taskId: buildTaskId({ projectCode: rows[0].code, environment: env.name, type: input.type, seq }),
+        taskId: buildTaskId({ projectCode: project.code, environment: env.name, type: input.type, seq }),
         projectId: input.projectId,
         environmentId: env.id,
         type: input.type,

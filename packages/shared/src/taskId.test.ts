@@ -8,13 +8,31 @@ import {
   extractTaskIdFromMessage,
   normalizeRepoUrl,
   parseTaskId,
+  randomTaskSeq,
+  TASK_SEQ_MAX,
+  TASK_SEQ_MIN,
 } from './taskId';
+
+describe('randomTaskSeq', () => {
+  it('returns a 6-digit number', () => {
+    for (let i = 0; i < 1000; i++) {
+      const seq = randomTaskSeq();
+      expect(Number.isInteger(seq)).toBe(true);
+      expect(seq).toBeGreaterThanOrEqual(TASK_SEQ_MIN);
+      expect(seq).toBeLessThanOrEqual(TASK_SEQ_MAX);
+    }
+  });
+});
 
 describe('buildTaskId', () => {
   it('builds the documented format', () => {
-    expect(buildTaskId({ projectCode: 'IPO', environment: 'Prod', type: 'fix', seq: 1234 })).toBe(
-      'IPO-Prod-fix-Q1234',
+    expect(buildTaskId({ projectCode: 'IPO', environment: 'Prod', type: 'fix', seq: 123450 })).toBe(
+      'IPO-Prod-fix-Q123450',
     );
+  });
+
+  it('rejects a number that is not six digits', () => {
+    expect(() => buildTaskId({ projectCode: 'IPO', environment: 'Prod', type: 'fix', seq: 1234 })).toThrow();
   });
 
   it('rejects an unknown task type', () => {
@@ -47,20 +65,24 @@ describe('parseTaskId', () => {
 
 describe('checkCommitMessage', () => {
   it('accepts the documented example', () => {
-    const r = checkCommitMessage('feat(IPO-Prod-fix-Q1234): Readjust the layout of invest app');
-    expect(r).toEqual({ ok: true, commitType: 'feat', taskId: 'IPO-Prod-fix-Q1234' });
+    const r = checkCommitMessage('feat(IPO-Prod-fix-Q123450): Readjust the layout of invest app');
+    expect(r).toEqual({ ok: true, commitType: 'feat', taskId: 'IPO-Prod-fix-Q123450' });
+  });
+
+  it.each(['Q1', 'Q12345', 'Q1234567'])('rejects a task number that is not six digits (%s)', (q) => {
+    expect(checkCommitMessage(`feat(IPO-Prod-fix-${q}): x`).ok).toBe(false);
   });
 
   it('allows a commit type different from the task type', () => {
-    expect(checkCommitMessage('chore(IPO-Prod-fix-Q1): bump deps').ok).toBe(true);
+    expect(checkCommitMessage('chore(IPO-Prod-fix-Q123450): bump deps').ok).toBe(true);
   });
 
   it('only looks at the first line', () => {
-    expect(checkCommitMessage('fix(IPO-Dev-feat-Q9): subject\n\nbody text').ok).toBe(true);
+    expect(checkCommitMessage('fix(IPO-Dev-feat-Q900001): subject\n\nbody text').ok).toBe(true);
   });
 
   it('ignores git comment lines', () => {
-    expect(checkCommitMessage('# Please enter\nfix(IPO-Dev-feat-Q9): subject').ok).toBe(true);
+    expect(checkCommitMessage('# Please enter\nfix(IPO-Dev-feat-Q900001): subject').ok).toBe(true);
   });
 
   it('rejects a missing task id', () => {
@@ -74,7 +96,7 @@ describe('checkCommitMessage', () => {
   });
 
   it('rejects an empty subject', () => {
-    expect(checkCommitMessage('feat(IPO-Prod-fix-Q1): ').ok).toBe(false);
+    expect(checkCommitMessage('feat(IPO-Prod-fix-Q123450): ').ok).toBe(false);
   });
 
   it.each([
