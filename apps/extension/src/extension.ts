@@ -17,7 +17,7 @@ let statusBar: vscode.StatusBarItem;
 let git: GitAPI | undefined;
 
 function serverUrl(): string {
-  return vscode.workspace.getConfiguration('taskTracker').get<string>('serverUrl', 'http://localhost:3000').replace(/\/+$/, '');
+  return vscode.workspace.getConfiguration('taskTracker').get<string>('serverUrl', 'https://ib-task-tracker-lilac.vercel.app').replace(/\/+$/, '');
 }
 
 async function client(requireAuth = true): Promise<ApiClient> {
