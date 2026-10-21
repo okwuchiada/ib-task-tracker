@@ -7,6 +7,7 @@ import { canEditGroup, canEditTask, findVisibleTask } from './access';
 import { signIn, signOut } from './auth';
 import { prisma } from './db';
 import { requireAdmin, requireUser } from './session';
+import { generateApiToken, hashToken } from './tokens';
 
 function str(form: FormData, key: string) {
   return String(form.get(key) ?? '').trim();
@@ -93,6 +94,19 @@ export async function setProjectAccess(userId: string, form: FormData) {
 }
 
 // ---- Tokens ----
+
+export type CreateTokenState = { token?: string; label?: string; error?: string };
+
+/** Creates an API token for CI (e.g. the record-commits GitHub workflow). The raw token is returned once. */
+export async function createApiToken(_prev: CreateTokenState, form: FormData): Promise<CreateTokenState> {
+  const user = await requireUser();
+  const label = str(form, 'label');
+  if (label.length < 2 || label.length > 80) return { error: 'Give the token a name (2-80 characters).' };
+  const token = generateApiToken();
+  await prisma.apiToken.create({ data: { userId: user.id, tokenHash: hashToken(token), label } });
+  revalidatePath('/settings/tokens');
+  return { token, label };
+}
 
 export async function revokeToken(id: string) {
   const user = await requireUser();

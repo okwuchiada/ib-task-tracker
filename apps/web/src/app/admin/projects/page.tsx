@@ -1,7 +1,11 @@
 import { createProject, setProjectActive, updateProject } from '@/lib/actions';
 import { prisma } from '@/lib/db';
 import { requireAdmin } from '@/lib/session';
-import { Badge, Empty, Mono, PageHeader } from '@/components/ui';
+import { Empty, Field, Mono, PageHeader, StatusBadge } from '@/components/common';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export default async function ProjectsPage() {
   await requireAdmin();
@@ -13,57 +17,63 @@ export default async function ProjectsPage() {
   return (
     <>
       <PageHeader title="Projects" description="Project codes are the first part of every task ID and cannot be changed once created." />
-      <form action={createProject} className="card mb-6 flex flex-wrap items-end gap-3 p-3">
-        <label className="flex flex-col gap-1 text-xs text-zinc-500">
-          Code
-          <input name="code" required pattern="[A-Za-z0-9]{2,10}" placeholder="IPO" className="input w-28 font-mono uppercase" />
-        </label>
-        <label className="flex flex-1 flex-col gap-1 text-xs text-zinc-500">
-          Name
-          <input name="name" required placeholder="Invest app" className="input" />
-        </label>
-        <button className="btn btn-primary">Add project</button>
-      </form>
+      <Card size="sm" className="mb-6">
+        <form action={createProject} className="flex flex-wrap items-end gap-3 px-(--card-spacing)">
+          <Field label="Code">
+            <Input name="code" required pattern="[A-Za-z0-9]{2,10}" placeholder="IPO" className="w-28 font-mono uppercase" />
+          </Field>
+          <Field label="Name" className="flex-1">
+            <Input name="name" required placeholder="Invest app" />
+          </Field>
+          <Button>Add project</Button>
+        </form>
+      </Card>
 
-      <div className="card overflow-x-auto">
+      <Card className="py-0">
         {projects.length === 0 ? (
           <Empty>No projects yet.</Empty>
         ) : (
-          <table className="table w-full">
-            <thead>
-              <tr>
-                <th>Code</th>
-                <th>Name</th>
-                <th className="text-right">Tasks</th>
-                <th>Status</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Code</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead className="text-right">Tasks</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {projects.map((p) => (
-                <tr key={p.id}>
-                  <td>
+                <TableRow key={p.id}>
+                  <TableCell>
                     <Mono>{p.code}</Mono>
-                  </td>
-                  <td>
+                  </TableCell>
+                  <TableCell>
                     <form action={updateProject.bind(null, p.id)} className="flex gap-2">
-                      <input name="name" defaultValue={p.name} className="input flex-1" />
-                      <button className="btn btn-sm">Rename</button>
+                      <Input name="name" defaultValue={p.name} aria-label={`${p.code} name`} className="h-8 flex-1" />
+                      <Button variant="outline" size="sm">
+                        Rename
+                      </Button>
                     </form>
-                  </td>
-                  <td className="text-right tabular-nums">{p._count.tasks}</td>
-                  <td>{p.active ? <Badge tone="OPEN">active</Badge> : <Badge tone="ARCHIVED">inactive</Badge>}</td>
-                  <td className="text-right">
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{p._count.tasks}</TableCell>
+                  <TableCell>
+                    {p.active ? <StatusBadge tone="OPEN">active</StatusBadge> : <StatusBadge tone="ARCHIVED">inactive</StatusBadge>}
+                  </TableCell>
+                  <TableCell className="text-right">
                     <form action={setProjectActive.bind(null, p.id, !p.active)}>
-                      <button className="btn btn-sm">{p.active ? 'Deactivate' : 'Activate'}</button>
+                      <Button variant="outline" size="xs">
+                        {p.active ? 'Deactivate' : 'Activate'}
+                      </Button>
                     </form>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
-      </div>
+      </Card>
     </>
   );
 }

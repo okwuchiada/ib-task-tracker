@@ -1,13 +1,17 @@
 'use client';
 
+import { CheckIcon, CopyIcon } from 'lucide-react';
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 
 export function CopyButton({ text, label = 'Copy', className = '' }: { text: string; label?: string; className?: string }) {
   const [copied, setCopied] = useState(false);
   return (
-    <button
+    <Button
       type="button"
-      className={`btn btn-sm ${className}`}
+      variant="outline"
+      size="xs"
+      className={className}
       disabled={!text}
       onClick={async () => {
         await navigator.clipboard.writeText(text);
@@ -15,7 +19,8 @@ export function CopyButton({ text, label = 'Copy', className = '' }: { text: str
         setTimeout(() => setCopied(false), 1500);
       }}
     >
+      {copied ? <CheckIcon /> : <CopyIcon />}
       {copied ? 'Copied' : label}
-    </button>
+    </Button>
   );
 }

@@ -1,7 +1,11 @@
 import { revokeToken } from '@/lib/actions';
 import { prisma } from '@/lib/db';
 import { requireUser } from '@/lib/session';
-import { Badge, Empty, formatDateTime, PageHeader } from '@/components/ui';
+import { CreateTokenForm } from '@/components/CreateTokenForm';
+import { Empty, formatDateTime, PageHeader, StatusBadge } from '@/components/common';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export default async function TokensPage() {
   const user = await requireUser();
@@ -11,42 +15,48 @@ export default async function TokensPage() {
     <>
       <PageHeader
         title="Extension tokens"
-        description="One token is created each time you sign in from VS Code. Revoke any you no longer use."
+        description="One token is created each time you sign in from VS Code. Create one here for CI, such as the GitHub workflow that records commits. Revoke any you no longer use."
       />
-      <div className="card overflow-x-auto">
+      <Card size="sm" className="mb-6">
+        <CreateTokenForm />
+      </Card>
+
+      <Card className="py-0">
         {tokens.length === 0 ? (
           <Empty>No tokens. Run “Task Tracker: Sign In” in VS Code.</Empty>
         ) : (
-          <table className="table w-full">
-            <thead>
-              <tr>
-                <th>Label</th>
-                <th>Created</th>
-                <th>Last used</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Label</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead>Last used</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {tokens.map((t) => (
-                <tr key={t.id}>
-                  <td>{t.label}</td>
-                  <td className="text-zinc-500">{formatDateTime(t.createdAt)}</td>
-                  <td className="text-zinc-500">{t.lastUsedAt ? formatDateTime(t.lastUsedAt) : 'never'}</td>
-                  <td className="text-right">
+                <TableRow key={t.id}>
+                  <TableCell>{t.label}</TableCell>
+                  <TableCell className="text-muted-foreground">{formatDateTime(t.createdAt)}</TableCell>
+                  <TableCell className="text-muted-foreground">{t.lastUsedAt ? formatDateTime(t.lastUsedAt) : 'never'}</TableCell>
+                  <TableCell className="text-right">
                     {t.revokedAt ? (
-                      <Badge tone="ARCHIVED">revoked</Badge>
+                      <StatusBadge tone="ARCHIVED">revoked</StatusBadge>
                     ) : (
                       <form action={revokeToken.bind(null, t.id)}>
-                        <button className="btn btn-sm">Revoke</button>
+                        <Button variant="destructive" size="xs">
+                          Revoke
+                        </Button>
                       </form>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
-      </div>
+      </Card>
     </>
   );
 }
