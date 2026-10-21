@@ -1,0 +1,49 @@
+name: Record commits
+
+# Sends every pushed commit that carries a task ID to the dashboard, so it doesn't depend on
+# each developer having the pre-push hook installed.
+# Needs repository secret TASK_TRACKER_TOKEN (create one on the dashboard under Extension tokens)
+# and, optionally, variable TASK_TRACKER_URL (defaults to the production dashboard).
+on:
+  push:
+    branches: ['**']
+
+permissions:
+  contents: read
+
+# One run per branch at a time; recording is idempotent, so a queued run just catches up.
+concurrency:
+  group: record-commits-${{ github.ref }}
+
+jobs:
+  record:
+    name: Record commits on the dashboard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Work out which commits are new
+        id: range
+        env:
+          BEFORE: ${{ github.event.before }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: echo "range=$(sh scripts/push-range.sh)" >> "$GITHUB_OUTPUT"
+
+      - name: Send them to the dashboard
+        env:
+          TASK_TRACKER_URL: ${{ vars.TASK_TRACKER_URL || 'https://ib-task-tracker-lilac.vercel.app' }}
+          TASK_TRACKER_TOKEN: ${{ secrets.TASK_TRACKER_TOKEN }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}.git
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          if [ -z "$TASK_TRACKER_TOKEN" ]; then
+            echo "::warning title=Task Tracker::TASK_TRACKER_TOKEN secret is not set, so commits were not recorded."
+            exit 0
+          fi
+          node scripts/record-commits.mts "${{ steps.range.outputs.range }}"

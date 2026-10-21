@@ -26,9 +26,17 @@ export async function createTask(user: User, input: CreateTaskRequest) {
     }
     if (!seq) throw new HttpError(503, 'Could not allocate a task number, please retry');
 
+    let taskId: string;
+    try {
+      taskId = buildTaskId({ projectCode: project.code, environment: env.name, type: input.type, seq });
+    } catch (err) {
+      // Codes and names are validated in the admin pages, but can still be edited straight in the database.
+      throw new HttpError(400, `${err instanceof Error ? err.message : err}. Ask an admin to fix it.`);
+    }
+
     const task = await tx.task.create({
       data: {
-        taskId: buildTaskId({ projectCode: project.code, environment: env.name, type: input.type, seq }),
+        taskId,
         projectId: input.projectId,
         environmentId: env.id,
         type: input.type,

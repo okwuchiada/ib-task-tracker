@@ -1,6 +1,7 @@
 import { revokeToken } from '@/lib/actions';
 import { prisma } from '@/lib/db';
 import { requireUser } from '@/lib/session';
+import { CreateTokenForm } from '@/components/CreateTokenForm';
 import { Empty, formatDateTime, PageHeader, StatusBadge } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -14,8 +15,12 @@ export default async function TokensPage() {
     <>
       <PageHeader
         title="Extension tokens"
-        description="One token is created each time you sign in from VS Code. Revoke any you no longer use."
+        description="One token is created each time you sign in from VS Code. Create one here for CI, such as the GitHub workflow that records commits. Revoke any you no longer use."
       />
+      <Card size="sm" className="mb-6">
+        <CreateTokenForm />
+      </Card>
+
       <Card className="py-0">
         {tokens.length === 0 ? (
           <Empty>No tokens. Run “Task Tracker: Sign In” in VS Code.</Empty>
